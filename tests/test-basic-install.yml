@@ -1,0 +1,71 @@
+name: Test basic yq installation (compressed)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_OS: Linux
+      RUNNER_ARCH: X64
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner directories
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/runner-tool-cache
+
+      - id: action
+        name: Install yq with defaults (force to ensure install)
+        uses: .
+        with:
+          version: "v4.44.3"
+          download-compressed: "true"
+          force: "true"
+
+      - name: Assert installed output is true
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true, got '$INSTALLED'"
+            exit 1
+          fi
+          echo "PASS: installed=true"
+
+      - name: Assert yq binary exists in tool cache
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          echo "Checking for yq at: $YQ_BIN"
+          if [ ! -f "$YQ_BIN" ]; then
+            echo "FAIL: yq binary not found at $YQ_BIN"
+            ls -la /tmp/runner-tool-cache/ 2>/dev/null || echo "tool cache dir missing"
+            exit 1
+          fi
+          echo "PASS: yq binary found"
+
+      - name: Assert yq version is correct
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          chmod +x "$YQ_BIN"
+          YQ_VER="$($YQ_BIN --version)"
+          echo "yq version: $YQ_VER"
+          if ! echo "$YQ_VER" | grep -q "4.44.3"; then
+            echo "FAIL: expected version 4.44.3 in output, got: $YQ_VER"
+            exit 1
+          fi
+          echo "PASS: yq is installed and correct version"
+
+      - name: Assert yq can parse YAML
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          RESULT="$(echo 'key: value' | $YQ_BIN '.key')"
+          echo "yq parse result: $RESULT"
+          if [ "$RESULT" != "value" ]; then
+            echo "FAIL: expected 'value', got '$RESULT'"
+            exit 1
+          fi
+          echo "PASS: yq can parse YAML"

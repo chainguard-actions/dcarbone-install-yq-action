@@ -1,0 +1,79 @@
+name: Test yq force reinstall
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_OS: Linux
+      RUNNER_ARCH: X64
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner directories
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/runner-tool-cache
+
+      # First install yq with force=true to ensure it's installed
+      - id: first-install
+        name: First install of yq
+        uses: .
+        with:
+          version: "v4.44.3"
+          download-compressed: "true"
+          force: "true"
+
+      - name: Assert first install succeeded
+        env:
+          INSTALLED: ${{ steps.first-install.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true on first install, got '$INSTALLED'"
+            exit 1
+          fi
+          echo "PASS: first install succeeded"
+
+      - name: Verify yq binary exists after first install
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          if [ ! -f "$YQ_BIN" ]; then
+            echo "FAIL: yq not found at $YQ_BIN after first install"
+            exit 1
+          fi
+          echo "PASS: yq found after first install"
+
+      # Now force reinstall with a different version
+      - id: force-install
+        name: Force reinstall of yq with different version
+        uses: .
+        with:
+          version: "v4.43.1"
+          download-compressed: "true"
+          force: "true"
+
+      - name: Assert force install outputs
+        env:
+          INSTALLED: ${{ steps.force-install.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true when force=true, got '$INSTALLED'"
+            exit 1
+          fi
+          echo "PASS: force install reported installed=true"
+
+      - name: Assert yq is still functional after force reinstall
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          if [ ! -f "$YQ_BIN" ]; then
+            echo "FAIL: yq not found at $YQ_BIN after force reinstall"
+            exit 1
+          fi
+          chmod +x "$YQ_BIN"
+          YQ_VER="$($YQ_BIN --version)"
+          echo "yq version after force reinstall: $YQ_VER"
+          echo "PASS: yq is functional after force reinstall"

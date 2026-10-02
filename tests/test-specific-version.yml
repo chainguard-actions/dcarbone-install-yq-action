@@ -1,0 +1,74 @@
+name: Test yq installation of specific version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_OS: Linux
+      RUNNER_ARCH: X64
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner directories
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/runner-tool-cache
+
+      - id: action
+        name: Install specific yq version
+        uses: .
+        with:
+          version: "v4.40.5"
+          download-compressed: "true"
+          force: "true"
+
+      - name: Assert installed output is true
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "installed: $INSTALLED"
+          echo "found: $FOUND"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true, got '$INSTALLED'"
+            exit 1
+          fi
+          echo "PASS: installed=true"
+
+      - name: Assert correct version is installed
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          if [ ! -f "$YQ_BIN" ]; then
+            echo "FAIL: yq not found at $YQ_BIN"
+            exit 1
+          fi
+          chmod +x "$YQ_BIN"
+          YQ_VER="$($YQ_BIN --version)"
+          echo "yq version: $YQ_VER"
+          if ! echo "$YQ_VER" | grep -q "4.40.5"; then
+            echo "FAIL: expected version 4.40.5 in output, got: $YQ_VER"
+            exit 1
+          fi
+          echo "PASS: correct version installed"
+
+      - name: Assert yq can process YAML
+        run: |
+          YQ_BIN="/tmp/runner-tool-cache/yq/yq"
+          chmod +x "$YQ_BIN"
+          printf 'name: test\nage: 42\n' > /tmp/test-input.yaml
+          NAME="$($YQ_BIN '.name' /tmp/test-input.yaml)"
+          AGE="$($YQ_BIN '.age' /tmp/test-input.yaml)"
+          echo "name: $NAME"
+          echo "age: $AGE"
+          if [ "$NAME" != "test" ]; then
+            echo "FAIL: expected name='test', got '$NAME'"
+            exit 1
+          fi
+          if [ "$AGE" != "42" ]; then
+            echo "FAIL: expected age='42', got '$AGE'"
+            exit 1
+          fi
+          echo "PASS: yq correctly parses YAML"
