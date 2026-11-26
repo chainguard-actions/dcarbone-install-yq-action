@@ -1,0 +1,51 @@
+name: Test forced install with default version (compressed)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          force: 'true'
+      - name: Assert installed output
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "installed: $INSTALLED"
+          echo "found: $FOUND"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true"
+            exit 1
+          fi
+          if [ "$FOUND" != "true" ] && [ "$FOUND" != "false" ]; then
+            echo "FAIL: found must be true or false"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert binary in tool cache with default version
+        run: |
+          BIN="$RUNNER_TOOL_CACHE/yq/yq"
+          if [ ! -x "$BIN" ]; then
+            echo "FAIL: $BIN not found or not executable"
+            exit 1
+          fi
+          OUT="$("$BIN" --version)"
+          echo "version: $OUT"
+          if ! echo "$OUT" | grep -q "4.30.6"; then
+            echo "FAIL: expected version 4.30.6"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert yq on PATH resolves to tool cache
+        run: |
+          echo "which yq: $(which yq)"
+          if [ "$(which yq)" != "$RUNNER_TOOL_CACHE/yq/yq" ]; then
+            echo "FAIL: yq on PATH is not the tool cache binary"
+            exit 1
+          fi
+          echo 'a: 1' | yq '.a' | grep -qx 1 || { echo "FAIL: yq did not evaluate"; exit 1; }
+          echo "PASS"

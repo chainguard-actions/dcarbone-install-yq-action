@@ -1,0 +1,37 @@
+name: Test default (no force) install path consistency
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Record pre-existing yq
+        id: pre
+        run: |
+          if [ -f "$(which yq 2>/dev/null)" ]; then
+            echo "had=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "had=false" >> "$GITHUB_OUTPUT"
+          fi
+      - id: action
+        uses: .
+      - name: Assert outputs match pre-existing state
+        env:
+          HAD: ${{ steps.pre.outputs.had }}
+          INSTALLED: ${{ steps.action.outputs.installed }}
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "had: $HAD found: $FOUND installed: $INSTALLED"
+          if [ "$HAD" = "true" ]; then
+            [ "$FOUND" = "true" ] || { echo "FAIL: expected found=true"; exit 1; }
+            [ "$INSTALLED" = "false" ] || { echo "FAIL: expected installed=false"; exit 1; }
+          else
+            [ "$FOUND" = "false" ] || { echo "FAIL: expected found=false"; exit 1; }
+            [ "$INSTALLED" = "true" ] || { echo "FAIL: expected installed=true"; exit 1; }
+            OUT="$("$RUNNER_TOOL_CACHE/yq/yq" --version)"
+            echo "version: $OUT"
+            echo "$OUT" | grep -q "4.30.6" || { echo "FAIL: expected 4.30.6"; exit 1; }
+          fi
+          command -v yq || { echo "FAIL: yq not on PATH"; exit 1; }
+          echo "PASS"

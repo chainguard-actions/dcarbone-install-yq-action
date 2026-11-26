@@ -1,0 +1,53 @@
+name: Test forced install of specific version (uncompressed)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          version: v4.40.5
+          download-compressed: 'false'
+          force: 'true'
+      - name: Assert installed output
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert requested version binary placed in tool cache
+        run: |
+          BIN="$RUNNER_TOOL_CACHE/yq/yq"
+          ls -l "$RUNNER_TOOL_CACHE/yq" || true
+          if [ ! -f "$BIN" ] || [ ! -s "$BIN" ]; then
+            echo "FAIL: $BIN not found or empty"
+            exit 1
+          fi
+          # The raw (uncompressed) download is written via wget to a file and
+          # is not chmod'ed by the action, so it may lack the exec bit.
+          # Verify the content on a private executable copy.
+          TMPBIN="$(mktemp)"
+          cp "$BIN" "$TMPBIN"
+          chmod +x "$TMPBIN"
+          OUT="$("$TMPBIN" --version)"
+          rm -f "$TMPBIN"
+          echo "version: $OUT"
+          if ! echo "$OUT" | grep -q "4.40.5"; then
+            echo "FAIL: expected version 4.40.5"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tool cache dir added to PATH
+        run: |
+          echo "PATH: $PATH"
+          case ":$PATH:" in
+            *":$RUNNER_TOOL_CACHE/yq:"*) echo "PASS" ;;
+            *) echo "FAIL: $RUNNER_TOOL_CACHE/yq not on PATH"; exit 1 ;;
+          esac

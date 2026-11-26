@@ -1,0 +1,44 @@
+name: Test skip install when yq already on PATH
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Put a fake yq on PATH
+        run: |
+          mkdir -p "$RUNNER_TEMP/fakeyq"
+          printf '#!/bin/sh\necho "fake-yq"\n' > "$RUNNER_TEMP/fakeyq/yq"
+          chmod +x "$RUNNER_TEMP/fakeyq/yq"
+          echo "$RUNNER_TEMP/fakeyq" >> "$GITHUB_PATH"
+          rm -rf "$RUNNER_TOOL_CACHE/yq"
+      - id: action
+        uses: .
+      - name: Assert found=true and installed=false
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "found: $FOUND"
+          echo "installed: $INSTALLED"
+          if [ "$FOUND" != "true" ]; then
+            echo "FAIL: expected found=true"
+            exit 1
+          fi
+          if [ "$INSTALLED" != "false" ]; then
+            echo "FAIL: expected installed=false"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert nothing installed to tool cache
+        run: |
+          if [ -e "$RUNNER_TOOL_CACHE/yq/yq" ]; then
+            echo "FAIL: tool cache yq should not exist"
+            exit 1
+          fi
+          if [ "$(yq)" != "fake-yq" ]; then
+            echo "FAIL: expected fake yq to remain first on PATH"
+            exit 1
+          fi
+          echo "PASS"

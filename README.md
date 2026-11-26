@@ -1,15 +1,68 @@
-# dcarbone/install-yq-action
+# install-yq-action
+Cross-platform [yq](https://github.com/mikefarah/yq) installer composite action
 
-Installs a version of YQ into the job tool cache using simple shell scripts
+[![Tests - Setup YQ Action](https://github.com/dcarbone/install-yq-action/actions/workflows/tests.yaml/badge.svg)](https://github.com/dcarbone/install-yq-action/actions/workflows/tests.yaml)
 
+# Index
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/dcarbone/install-yq-action](https://github.com/dcarbone/install-yq-action).
+1. [Examples](#examples)
+2. [Action Source](action.yaml)
+3. [Action Inputs](#action-inputs)
+4. [Action Outputs](#action-outputs)
 
-## Versions
+## Examples
 
-| Version | Tag | Upstream commit | Hardening report |
-|---------|-----|-----------------|------------------|
-| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/dcarbone-install-yq-action/tree/v1.3.1) | [`4075b4d`](https://github.com/dcarbone/install-yq-action/commit/4075b4dca348d74bd83f2bf82d30f25d7c54539b) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-yq-action/blob/v1.3.1/HARDENING.md) |
+* [linux](./.github/workflows/example-linux.yaml)
+* [macos](./.github/workflows/example-macos.yaml)
+* [windows](./.github/workflows/example-windows.yaml)
+
+## Action Inputs
+
+#### version
+```yaml
+  version:
+    required: false
+    description: "Version of YQ to install"
+    default: "v4.30.6"
+```
+
+This must be a version with a [corresponding release](https://github.com/mikefarah/yq/releases).
+
+#### download-compressed
+```yaml
+  download-compressed:
+    required: false
+    description: "If 'true', downloads .tar.gz of binary rather than raw binary.  Save the tubes."
+    default: 'true'
+```
+
+#### force
+```yaml
+  force:
+    required: false
+    description: "If 'true', does not check for existing yq installation before continuing."
+    default: 'false'
+```
+
+GitHub's own hosted runners come with a version of
+[yq pre-installed](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#preinstalled-software).
+
+Setting this to `true` will install the version you specify into the tool cache, superseding the preinstalled version.
+Setting this to true can also help ensure the same version is used across both self-hosted and remote runners. 
+
+## Action Outputs
+
+#### found
+```yaml
+  found:
+    description: "If 'true', yq was already found on this runner"
+```
+
+#### installed
+```yaml
+  installed:
+    description: "If 'true', yq was installed by this action"
+```
 
 ## Privacy
 
