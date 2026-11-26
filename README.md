@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
+| v1.1.0 | [`v1.1.0`](https://github.com/chainguard-actions/dcarbone-install-yq-action/tree/v1.1.0) | [`4d2a795`](https://github.com/dcarbone/install-yq-action/commit/4d2a79586f70993921358b3d28c596fec4e92ed2) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-yq-action/blob/v1.1.0/HARDENING.md) |
 | v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/dcarbone-install-yq-action/tree/v1.3.1) | [`4075b4d`](https://github.com/dcarbone/install-yq-action/commit/4075b4dca348d74bd83f2bf82d30f25d7c54539b) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-yq-action/blob/v1.3.1/HARDENING.md) |
 
 ## Privacy
